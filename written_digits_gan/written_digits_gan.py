@@ -191,7 +191,7 @@ def train(g_model, d_model, gan_model, dataset, latent_dim, n_epochs=100, n_batc
             save_generator_model(g_model)
 
 
-load = False
+load = False  # Would be better to use argparse, but this is just for basic testing
 model_path = "batch_one_10_epochs/models/g_model_0470.h5"
 
 latent_dim = 30

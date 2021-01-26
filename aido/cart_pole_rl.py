@@ -65,6 +65,9 @@ for size in layer_sizes:
 # scores = dqn.test(env, nb_episodes=30, visualize=False)
 
     dqn.save_weights(model_folder_name + "/" + model_name + ".h5f", overwrite=True)
+
+# Visualize the results
+
 # episodes = 10
 # for episode in range(1, episodes+1):
 #     state = env.reset()
