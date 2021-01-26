@@ -1,0 +1,10 @@
+# aido models
+aido/logs
+aido/models
+
+# least_cost_graph_solver visuals
+least_cost_graph_solver/*.gv*
+
+# writted_digits_gan aws credentials
+**/*.pem
+
