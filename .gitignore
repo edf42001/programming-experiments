@@ -8,3 +8,5 @@ least_cost_graph_solver/*.gv*
 # writted_digits_gan aws credentials
 **/*.pem
 
+# python
+**/__pycache__/
