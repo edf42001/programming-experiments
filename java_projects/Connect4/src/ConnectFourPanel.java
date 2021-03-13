@@ -32,6 +32,7 @@ import java.net.URL;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
@@ -55,13 +56,42 @@ public class ConnectFourPanel extends JPanel implements MouseListener{
 	private int gameover = 0;//0: not, 1: someone won, 2: tie
 	
 	static int choice = 0;
-	
+
 	//This timer activates when it is the AI's turn
 	Timer t = new Timer(0,new ActionListener(){
 		@Override
 		public void actionPerformed(ActionEvent e) {
-			
-			minimax(board,player,0,Integer.MIN_VALUE,Integer.MAX_VALUE);//Run minimax to calculate best move
+
+
+			int depthLimit = 10;
+			long maxTime = 500;
+			long startTime = System.currentTimeMillis();
+			long endTime = 0;
+			int expectedValue = 0;
+			int spacesLeft = spacesLeft(board);
+
+			// Use iterative deepening
+			do {
+				expectedValue = minimax(board,player,depthLimit,Integer.MIN_VALUE,Integer.MAX_VALUE);//Run minimax to calculate best move
+				endTime = System.currentTimeMillis();
+				depthLimit++;
+
+				// Loop until too much time has passed,
+				// Or the depth limit reaches the end of the game
+			} while(endTime - startTime < maxTime && depthLimit < spacesLeft);
+
+			System.out.println("Searched to depth: " + (depthLimit - 1));
+
+			if (expectedValue < -50000)
+			{
+				System.err.println("You are probably going to lose");
+			}
+			else if (expectedValue > 50000)
+			{
+				System.err.println("Uh oh I may have to admit defeat");
+			}
+
+
 			makeMove(board,choice,player);//make the move
 			repaint(); //redraw
 			turn++; //A turn happened
@@ -92,7 +122,6 @@ public class ConnectFourPanel extends JPanel implements MouseListener{
 		lastCol = 0;
 		gameover = 0;
 		board = new byte[numHigh][numWide];
-		
 	}
 	
 	public void paintComponent(Graphics g){
@@ -200,6 +229,28 @@ public class ConnectFourPanel extends JPanel implements MouseListener{
 		}
 		//otherwise, board is full
 		return true;
+	}
+
+	//Method: spacesLeft
+	//Description: Returns how many more moves are to be played in the game
+	public int spacesLeft(byte[][] board)
+	{
+		int movesLeft = 0;
+		for (int c = 0; c < numWide; c++)
+		{
+			for (int r = numHigh - 1; r >= 0; r--)
+			{
+				if (board[r][c] == 0)
+				{
+					movesLeft ++;
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+		return movesLeft;
 	}
 	
 	//Method: makeMove
@@ -437,10 +488,9 @@ public class ConnectFourPanel extends JPanel implements MouseListener{
 	
 	public int minimax(byte[][] board, int player, int d, int alpha, int beta){
 		//Do thing where it doesn't calculate move list each time
-		int depthLimit = 9;
 		int winner = -1; //Who won, used to do less calculations
 		
-		if(d>depthLimit){
+		if(d == 0){
 			winner = 0;
 		}else if(wins(board,3-player,lastRow,lastCol)){
 			winner = 3-player;
@@ -451,7 +501,8 @@ public class ConnectFourPanel extends JPanel implements MouseListener{
 		if(winner>=0) {return score(board,player,d,winner);}
 		
 		ArrayList<Integer> scores = new ArrayList<Integer>();
-		ArrayList<Integer> moves = new ArrayList<Integer>();
+		ArrayList<Integer> moves = new ArrayList<Integer>(Arrays.asList(3, 4, 2, 5, 1, 6, 0));
+
 		int winMove = 3;//start search in middle, so it goes in the middle if everything is a tie
 		for(int i = 0; i<numWide; i++){
 			//copy board
@@ -461,7 +512,7 @@ public class ConnectFourPanel extends JPanel implements MouseListener{
 					newBoard2[k][j]=board[k][j];
 				}
 			}
-			
+
 			//test every move. If it is a winning move, start there to save time
 			makeMove(newBoard2, i, player);
 			if(wins(newBoard2,player,lastRow,lastCol)){
@@ -471,11 +522,22 @@ public class ConnectFourPanel extends JPanel implements MouseListener{
 				//return score(newBoard2,player,d,player);
 			}
 		}
-			//generate moves list. Start winning move
-			for(int c = winMove; c<numWide+winMove; c++){
-				if(!columnFull(board,c%numWide)){moves.add(c%numWide);}
+
+		// Move winning move to the front
+		int moveIndex = moves.indexOf(winMove);
+
+		Collections.swap(moves, 0, moveIndex);
+
+
+		// Remove moves that are not valid
+		for (int i = moves.size() - 1; i >=0; i--)
+		{
+			if (columnFull(board, moves.get(i)))
+			{
+				moves.remove(i);
 			}
-		
+		}
+
 		//for every move
 		for(int i: moves){
 			
@@ -488,7 +550,7 @@ public class ConnectFourPanel extends JPanel implements MouseListener{
 			}
 			//generate board with new move
 			makeMove(newBoard,i,player);
-			int value = minimax(newBoard,3-player,d+1,alpha,beta);
+			int value = minimax(newBoard,3-player,d-1,alpha,beta);
 			//prune based on alpha beta values
 			if(player == 1 && value > alpha){
 				alpha = value;
