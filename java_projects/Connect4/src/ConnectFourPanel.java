@@ -501,7 +501,7 @@ public class ConnectFourPanel extends JPanel implements MouseListener{
 		if(winner>=0) {return score(board,player,d,winner);}
 		
 		ArrayList<Integer> scores = new ArrayList<Integer>();
-		ArrayList<Integer> moves = new ArrayList<Integer>(Arrays.asList(3, 4, 2, 5, 1, 6, 0));
+		ArrayList<Integer> moves = new ArrayList<Integer>(Arrays.asList(3, 4, 5, 6, 2, 1, 0));
 
 		int winMove = 3;//start search in middle, so it goes in the middle if everything is a tie
 		for(int i = 0; i<numWide; i++){
