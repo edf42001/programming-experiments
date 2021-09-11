@@ -1,3 +1,6 @@
+# python environments
+flask_blog/env
+
 # aido models
 aido/logs
 aido/models
