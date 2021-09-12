@@ -23,9 +23,9 @@ Experiment with a generative adverarial network to generate MNIST handwritten di
 
 ### java_projects
 A collection of projects written in high school. Including:
-* MandelbrotSet: Mandelbrot set visualization
-* CowVsAliens: Shootemup video game
-* ComplexFunctionViewer: Visualizes complex functions in the 2D plane
-* Connect4: A Connect 4 AI
-* GeneticAlgorithmBoxes: Genetic algorithm for boxes learning to catch falling fruit
-* GeneticAlgorithmDots: Genetic algorithm for dots learning to navigate through a small gap
+* **MandelbrotSet**: Mandelbrot set visualization
+* **CowVsAliens**: Shootemup video game
+* **ComplexFunctionViewer**: Visualizes complex functions in the 2D plane
+* **Connect4**: A Connect 4 AI
+* **GeneticAlgorithmBoxes**: Genetic algorithm for boxes learning to catch falling fruit
+* **GeneticAlgorithmDots**: Genetic algorithm for dots learning to navigate through a small gap
