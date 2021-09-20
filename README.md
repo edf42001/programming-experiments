@@ -6,6 +6,9 @@ Interesting software projects I wanted to test out
 ### aido
 Collection of neural network tests to learn how to use AI to compete in the aido driving challenge
 
+### flask_blog
+Uses flask and bootstrap to render a blog with the ability to create, edit, and delete posts
+
 ### kalman_filters
 Just experimenting with kalman filters, testing different ways of combining more than one sensor
 
