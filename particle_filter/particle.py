@@ -45,7 +45,8 @@ class Particle:
 
         return p
 
-    def move(self, vel, angular_vel, dt, noisy=False):
+    def move_velocity_model(self, vel, angular_vel, dt, noisy=False):
+        """Move the particle with a velocity noise model"""
         if noisy:
             vel = self.add_noise(vel, self.std_dev[2])
             angular_vel = self.add_noise(angular_vel, self.std_dev[3])
@@ -65,6 +66,36 @@ class Particle:
         self.x += dx * np.cos(self.theta) - dy * np.sin(self.theta)
         self.y += dx * np.sin(self.theta) + dy * np.cos(self.theta)
         self.theta += dtheta
+
+    def move_odometry_model(self, dx, dy, dtheta, noisy=True):
+        """Model robot motion as havng moved a dx, dy, and dtheta"""
+        theta1 = np.arctan2(dy, dx)
+        dist = np.sqrt(dx ** 2 + dy ** 2)
+        theta2 = dtheta - theta1
+
+        self.move_theta_dist_model(theta1, dist, theta2, noisy=noisy)
+
+
+    def move_theta_dist_model(self, theta1, dist, theta2, noisy=True):
+        """Model robot motion as rotate, move, rotate, each with noise"""
+
+        # These are four parameters you can tune for the motion model. 
+        # They affact std dev of noise
+        a1 = self.std_dev[3]
+        a2 = self.std_dev[3]
+        a3 = self.std_dev[2]
+        a4 = 0
+
+        # Randomize movements
+        if noisy:
+            theta1 = self.add_noise(theta1, a1 * abs(theta1) + a2 * dist)
+            dist = self.add_noise(dist, a3 * dist)
+            theta2 = self.add_noise(theta2, a1 * abs(theta2) + a2 *  dist)
+
+        # Move
+        self.x += dist * np.cos(self.theta + theta1)
+        self.y += dist * np.sin(self.theta + theta1)
+        self.theta += theta1 + theta2
 
     def add_noise(self, x, std_dev):
         return x + np.random.normal(0, std_dev)

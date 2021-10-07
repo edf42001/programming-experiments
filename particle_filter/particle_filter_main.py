@@ -24,14 +24,13 @@ def create_folder(folder_name):
 class ParticleFilter:
     def __init__(self):
         self.n_particles = 4000
-        self.particles = [Particle(0, 0, 0, randomize=True, std_dev=[1, 1, 0.1, 0.2, 0.2, 0.2],
+        self.particles = [Particle(0, 0, 0, randomize=True, std_dev=[1, 1, 0.05, 0.07, 0.2, 0.2],
                         weight=(1.0 / self.n_particles)) for i in range(self.n_particles)]
 
         self.robot = Particle(0, 0, 0, std_dev=[0, 0, 0, 0.0, 0, 0])
         self.measurement = []  # Store measurement for visualization purposes
 
         self.world = [[1, 1], [2, 3], [-4, 2]]  # 2D array of landmark X, Y locations
-        # self.world = [[2, 3]]  # 2D array of landmark X, Y locations
 
         self.measurement_mode = MeasurementMode.DISTANCE_FOV  # What sensor data the robot can recieve
 
@@ -39,9 +38,17 @@ class ParticleFilter:
         self.estimated_position_history = []
         self.localization_error_history = []
 
-    def motion_step(self, vel, angular_vel, dt):
+    def motion_step_vel(self, vel, angular_vel, dt):
         for p in self.particles:
             p.move(vel, angular_vel, dt, noisy=True)
+
+    def motion_step_odom(self, dx, dy, dtheta):
+        theta1 = np.arctan2(dy, dx)
+        dist = np.sqrt(dx ** 2 + dy ** 2)
+        theta2 = dtheta - theta1
+
+        for p in self.particles:
+            p.move_theta_dist_model(theta1, dist, theta2, noisy=True)
 
     def plot(self, plot):
         if not plot:
@@ -141,31 +148,23 @@ if __name__ == "__main__":
     # Stop matplotlib for loop from running
     signal.signal(signal.SIGINT, signal_handler)
 
-    robot_motions = np.array([[1, 0.5, 1],
-                              [1, 0.5, 1],
-                              [1, 0.5, 1],
-                              [1, 0.5, 1],
-                              [1, 0.5, 1],
-                              [1, 0.5, 1],
-                              [1, 0.5, 1],
-                              [1, 0.5, 1],
-                              [1, 0.5, 1]])
-
-    # robot_motions = np.array([[0, 1, 1],
-    #                           [0, 1, 1],
-    #                           [0, -1, 1],
-    #                           [0, -1, 1],
-    #                           [1, 0.5, 1],
-    #                           [1, 0.5, 1],
-    #                           [1, 0.5, 1]])
+    robot_motions = np.array([[1, 0.2, 0.5],
+                              [1, 0.2, 0.5],
+                              [1, 0.2, 0.5],
+                              [1, 0.2, 0.5],
+                              [1, 0.2, 0.5],
+                              [1, 0.2, 0.5],
+                              [1, 0.2, 0.5],
+                              [1, 0.2, 0.5],
+                              [1, 0.2, 0.5]])
 
     particle_filter = ParticleFilter()
     plot = True
     for move in robot_motions:
         particle_filter.plot(plot)
 
-        particle_filter.robot.move(move[0], move[1], move[2], noisy=True)
-        particle_filter.motion_step(move[0], move[1], move[2])
+        particle_filter.robot.move_odometry_model(move[0], move[1], move[2], noisy=True)
+        particle_filter.motion_step_odom(move[0], move[1], move[2])
 
         particle_filter.measurement = []  # After motion the old measurement isn't valid
         print("After motion")
