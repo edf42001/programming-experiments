@@ -8,7 +8,7 @@ var shapes = [];
 // ID 0: Sphere
 shapes.push({
     id: 0,
-    x: 265,
+    x: 65,
     y: 205,
     z: 200,
     r: 70,
@@ -18,7 +18,7 @@ shapes.push({
 // ID 1: Rectangle
 shapes.push({
     id: 1,
-    x: 200,
+    x: 0,
     y: 100,
     z: 400,
     rx: 50,
@@ -38,11 +38,11 @@ shapes.push({
 //});
 
 camera = {
-    x: 200,
+    x: 0,
     y: 200,
     z: 0,
     dir: [0, 0, 1],
-    fov: 1.0, // Radians, horizontal and vertical
+    fov: 1.0, // Radians, horizontal
     pan: 0,
     tilt: 0
 };
@@ -56,7 +56,7 @@ var mouse = {x: 0, y: 0};
 var lastMouse = {x: mouse.x, y: mouse.y}; // Assign by reference is annoying so don't do it
 
 // Loop forever
-var FPS = 9;
+var FPS = 10;
 setInterval(update, 1000 / FPS);
 
 let counter = 0;
@@ -78,10 +78,10 @@ function update() {
     var mouseSensitivity = 0.004;
     if (lastMouse.x != 0 && lastMouse.y != 0) {
         camera.pan -= mouseSensitivity * (mouse.x - lastMouse.x);
-//        camera.tilt -= mouseSensitivity * (mouse.y - lastMouse.y);
+        camera.tilt -= mouseSensitivity * (mouse.y - lastMouse.y);
 
         // Constrain head look view
-        camera.tilt = Math.max(Math.min(Math.PI/2, camera.tilt), -Math.PI/2);
+        camera.tilt = Math.max(Math.min(Math.PI / 2, camera.tilt), -Math.PI / 2);
     }
     lastMouse.x = mouse.x;
     lastMouse.y = mouse.y;
@@ -116,13 +116,13 @@ function update() {
             // Extract x and y from pixel coord
             x = (j - width / 2);
             y = (height / 2 - i);
-            z = 200;
+            z = 200; // Controls FOV
 
             ray = {x: x, y: y, z:z};
             magnitude = Math.sqrt(ray.x**2 + ray.y**2 + ray.z**2);
             ray.x /= magnitude; ray.y /= magnitude; ray.z /= magnitude;
 
-            // Ray is actually rotated by wherever the camera is
+            // Ray is rotated by wherever the camera points
             ray = rotate_ray_by_camera_view(ray, camera.pan, camera.tilt)
 
             color = calculate_and_render_pixel(camera, ray, shapes);
@@ -191,10 +191,10 @@ function calculate_and_render_pixel(camera, ray, shapes) {
 function rotate_ray_by_camera_view(ray, pan, tilt) {
     // Rotates a ray from camera to a pixel to its new direction
     // given the fact that the camera is titled and panned
-    // This is just a rotation matrix but I don't have those so
+    // This is a rotation matrix but those aren't in javascript so
     // I do the calculations myself
     x = [Math.cos(pan), 0, Math.sin(pan)];
-    y = [-Math.sin(pan) * Math.sin(tilt), Math.cos(tilt), Math.cos(pan) * Math.sin(tilt)];
+    y = [Math.sin(pan) * Math.sin(tilt), Math.cos(tilt), -Math.cos(pan) * Math.sin(tilt)];
     z = [-Math.sin(pan) * Math.cos(tilt), Math.sin(tilt), Math.cos(pan) * Math.cos(tilt)];
 
     rot_ray = {x: 0, y: 0, z: 0};
