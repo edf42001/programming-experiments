@@ -47,6 +47,16 @@ camera = {
     tilt: 0
 };
 
+// A light source
+light = {
+    x: -200,
+    y: 200,
+    z: 150,
+}
+
+// Array to store camera rays, instead of calculating every frame
+var rays = create_camera_ray_matrix(width, height, 200);
+
 // Stores which keys are pressed to move player
 var keys = {w: false, a: false, s: false, d: false, up: false, down: false};
 
@@ -59,11 +69,26 @@ var lastMouse = {x: mouse.x, y: mouse.y}; // Assign by reference is annoying so 
 var FPS = 10;
 setInterval(update, 1000 / FPS);
 
+// Stores the image data in one big array, rgba. Alpha will always be 255.
+var imgData = create_image_data(width, height);
+
+// Store key presses so the update function can move the camera
+window.onkeydown = function(event){
+    updateKey(event.keyCode, true);
+};
+
+window.onkeyup = function(event){
+    updateKey(event.keyCode, false);
+};
+
+// Store mouse movements so the player can move the screen
+window.onmousemove = function(event) {
+    mouse.x = event.x;
+    mouse.y = event.y;
+}
+
 let counter = 0;
 function update() {
-    // Stores the image data in one big array, rgba
-    var imgData = ctx.createImageData(width, height);
-
 //    let start = (new Date()).getMilliseconds();
 
     // Bob shapes up and down
@@ -113,17 +138,8 @@ function update() {
     for (var i = 0; i < height; i++) {
         for (var j = 0; j < width; j++)
         {
-            // Extract x and y from pixel coord
-            x = (j - width / 2);
-            y = (height / 2 - i);
-            z = 200; // Controls FOV
-
-            ray = {x: x, y: y, z:z};
-            magnitude = Math.sqrt(ray.x**2 + ray.y**2 + ray.z**2);
-            ray.x /= magnitude; ray.y /= magnitude; ray.z /= magnitude;
-
-            // Ray is rotated by wherever the camera points
-            ray = rotate_ray_by_camera_view(ray, camera.pan, camera.tilt)
+            // The camera ray is rotated by wherever the camera points
+            ray = rotate_ray_by_camera_view(rays[i][j], camera.pan, camera.tilt)
 
             color = calculate_and_render_pixel(camera, ray, shapes);
 
@@ -131,7 +147,6 @@ function update() {
             imgData.data[index+0] = color[0];
             imgData.data[index+1] = color[1];
             imgData.data[index+2] = color[2];
-            imgData.data[index+3] = color[3];
         }
     }
 
@@ -173,10 +188,10 @@ function calculate_and_render_pixel(camera, ray, shapes) {
     hit = (dist <= distLimit);
 
     if (hit) {
-        color = [255, 0, 0, 255];
+        color = [255, 0, 0];
         color[0] -= numSteps * 5;
     } else {
-        color = [200, 200, 255, 255];
+        color = [200, 200, 255];
     }
 
     if (minDist > distLimit) {
@@ -206,14 +221,38 @@ function rotate_ray_by_camera_view(ray, pan, tilt) {
     return rot_ray;
 }
 
-// Store key presses so the update function can move the camera
-window.onkeydown = function(event){
-    updateKey(event.keyCode, true);
-};
+// Create an array to store camera rays, instead of calculating every frame
+function create_camera_ray_matrix(rays, z_fov) {
+    var rays = [...Array(height)].map(e => Array(width));
+    for (var i = 0; i < height; i++) {
+        for (var j = 0; j < width; j++)
+        {
+            // Extract x and y from pixel coord
+            x = (j - width / 2);
+            y = (height / 2 - i);
 
-window.onkeyup = function(event){
-    updateKey(event.keyCode, false);
-};
+            ray = {x: x, y: y, z:z_fov};
+            magnitude = Math.sqrt(ray.x**2 + ray.y**2 + ray.z**2);
+            ray.x /= magnitude; ray.y /= magnitude; ray.z /= magnitude;
+            rays[i][j] = ray;
+        }
+    }
+
+    return rays;
+}
+
+function create_image_data(width, height) {
+    var imgData = ctx.createImageData(width, height);
+    for (var i = 0; i < height; i++) {
+        for (var j = 0; j < width; j++)
+        {
+            index = 4 * (i * width + j);
+            imgData.data[index+3] = 255;
+        }
+    }
+
+    return imgData;
+}
 
 function updateKey(keyCode, value) {
     // wasd (space) (shift) = 87,65,83,68,32,16
@@ -239,12 +278,6 @@ function updateKey(keyCode, value) {
         default:
             break;
     }
-}
-
-// Store mouse movements so the player can move the screen
-window.onmousemove = function(event) {
-    mouse.x = event.x;
-    mouse.y = event.y;
 }
 
 function getGlobalDistanceEstimate(x, y, z, shapes) {
