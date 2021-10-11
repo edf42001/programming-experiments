@@ -2,6 +2,7 @@ var canvas = document.getElementById("mainCanvas");
 var width = canvas.width;
 var height = canvas.height;
 var ctx = canvas.getContext("2d");
+var fpsDisplay = document.getElementById("fpsDisplay");
 
 var shapes = [];
 
@@ -49,9 +50,9 @@ camera = {
 
 // A light source
 light = {
-    x: -200,
-    y: 300,
-    z: 150,
+    x: -450,
+    y: 400,
+    z: 100,
 }
 
 // Array to store camera rays, instead of calculating every frame
@@ -66,8 +67,13 @@ var mouse = {x: 0, y: 0};
 var lastMouse = {x: mouse.x, y: mouse.y}; // Assign by reference is annoying so don't do it
 
 // Loop forever
-var FPS = 10;
+var FPS = 15;
 setInterval(update, 1000 / FPS);
+
+// To keep track of performance
+let currentFPS = FPS;
+let lastFPS = currentFPS;
+let lastTime = new Date();
 
 // Stores the image data in one big array, rgba. Alpha will always be 255.
 var imgData = create_image_data(width, height);
@@ -90,6 +96,13 @@ window.onmousemove = function(event) {
 let counter = 0;
 function update() {
 //    let start = (new Date()).getMilliseconds();
+    // Keep track of deltaT and fps
+    let currTime = new Date();
+    // Smooth by adjusting alpha param
+    currentFPS = 0.4 * (1000 / (currTime - lastTime)) + 0.6 * lastFPS;
+    lastTime = currTime;
+    lastFPS = currentFPS;
+    fpsDisplay.innerHTML = "FPS: " + Math.trunc(currentFPS);
 
     // Bob shapes up and down
     counter += 1;
@@ -187,43 +200,42 @@ function calculate_and_render_pixel(camera, ray, shapes) {
     hit = (dist <= distLimit);
 
     if (hit) {
-        color = [230, 0, 0];
+        color = [150, 0, 0]; // No light color is not entirely black because of ambient
+
+        // Ambient occlusion (surface complexity proportional to steps taken)
         color[0] -= numSteps * 5;
 
         // Apply global light source, intensity from 0 to 1
         let point = {x: currX, y: currY, z: currZ};
-        let intensity = calculate_light_intensity(point, light, ray, shapes);
+
+        rayToLight = {x: light.x - point.x, y: light.y - point.y, z: light.z - point.z};
+        distToLight = ray_magnitude(rayToLight);
+        normalize_ray(rayToLight);
+
+        // TODO: check if ray hits light before doing more calculations
+        normalVec = normal_vector(point.x, point.y, point.z, shapes);
+        let specular = specular_light_intensity(rayToLight, normalVec, ray);
+        let diffuse = diffuse_light_intensity(rayToLight, normalVec);
+        let shadow = shadow_light_intensity(rayToLight, distToLight, point, shapes);
+
+        let intensity = specular + shadow;
+
+        // Diffuse light should be the color of the object, but the others the color of the light
         let lightScale = 200;
-        color[0] += intensity * lightScale;
+        color[0] += (intensity + diffuse) * lightScale;
         color[1] += intensity * lightScale;
         color[2] += intensity * lightScale;
     } else {
-        color = [200, 200, 255];
+        color = [230, 200, 255];
     }
 
     if (minDist > distLimit) {
         // This is actually a reverse glow, the default color is violet
         // and this makes it bluer
-        color[0] -= 3 * minDist
+        color[0] -= 5 * minDist
     }
 
     return color;
-}
-
-
-// Returns the intensity of the light falling on a pixel
-function calculate_light_intensity(point, light, viewRay, shapes) {
-    rayToLight = {x: light.x - point.x, y: light.y - point.y, z: light.z - point.z};
-    distToLight = ray_magnitude(rayToLight);
-    normalize_ray(rayToLight);
-
-    // TODO: check if ray hits light before doing more calculations
-    normalVec = normal_vector(point.x, point.y, point.z, shapes);
-    let specular = specular_light_intensity(rayToLight, normalVec, viewRay);
-    let diffuse = diffuse_light_intensity(rayToLight, normalVec);
-    let shadow = shadow_light_intensity(rayToLight, distToLight, point, shapes);
-
-    return specular + diffuse + shadow;
 }
 
 
@@ -254,7 +266,7 @@ function specular_light_intensity(rayToLight, normal, viewRay) {
 
 
 function diffuse_light_intensity(rayToLight, normal) {
-    let k = 0.3; // Control intensity of diffuse light
+    let k = 1; // Control intensity of diffuse light
 
     // Diffuse reflection is strongest directly under the light, and tapers off
     let diffuse = (rayToLight.x * normal.x + rayToLight.y * normal.y + rayToLight.z * normal.z);
