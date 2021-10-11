@@ -50,7 +50,7 @@ camera = {
 // A light source
 light = {
     x: -200,
-    y: 200,
+    y: 300,
     z: 150,
 }
 
@@ -96,7 +96,6 @@ function update() {
     for (let i = 0; i < shapes.length; i++) {
         shapes[i].y += 4 * Math.cos(counter / 10 + shapes[i].bob);
     }
-
 
     // Rotate camera. (Careful not to assign mouse by reference)
     // Avoid large jump on first run
@@ -160,7 +159,7 @@ function calculate_and_render_pixel(camera, ray, shapes) {
     // Camera is the camera parameters: position, facing direction vector, fov)
     // Ray is the direction being looked in relative to camera dir
     // Shapes is the shapes in the world
-    // Return rgba array
+    // Return rgb array
     let magnitude = 1000;
     let distLimit = 0.1;
 
@@ -168,17 +167,17 @@ function calculate_and_render_pixel(camera, ray, shapes) {
     let minDist = 1000;
     let numSteps = 0;
 
-    // If we start in a shape, invert the distance estimate so we know when we are out of the shape
-//    let inside = 1;
-//    if (getGlobalDistanceEstimate(camera.x, camera.y, camera.z, shapes) <= 0) {
-//        inside = -1;
-//    }
+    // Do one iteration first with a random dist adjustment so banding
+    // of num iterations ambient occlusion disappears
+    let dist = globalDistanceEstimate(camera.x, camera.y, camera.z, shapes);
+    marchedLength = dist * (Math.random() * 0.9 + 0.1);
+    numSteps += 1;
 
     do {
         currX = camera.x + ray.x * marchedLength;
         currY = camera.y + ray.y * marchedLength;
         currZ = camera.z + ray.z * marchedLength;
-        dist = getGlobalDistanceEstimate(currX, currY, currZ, shapes);
+        dist = globalDistanceEstimate(currX, currY, currZ, shapes);
         minDist = Math.min(dist, minDist);
 
         marchedLength += dist;
@@ -188,8 +187,16 @@ function calculate_and_render_pixel(camera, ray, shapes) {
     hit = (dist <= distLimit);
 
     if (hit) {
-        color = [255, 0, 0];
+        color = [230, 0, 0];
         color[0] -= numSteps * 5;
+
+        // Apply global light source, intensity from 0 to 1
+        let point = {x: currX, y: currY, z: currZ};
+        let intensity = calculate_light_intensity(point, light, ray, shapes);
+        let lightScale = 200;
+        color[0] += intensity * lightScale;
+        color[1] += intensity * lightScale;
+        color[2] += intensity * lightScale;
     } else {
         color = [200, 200, 255];
     }
@@ -202,6 +209,86 @@ function calculate_and_render_pixel(camera, ray, shapes) {
 
     return color;
 }
+
+
+// Returns the intensity of the light falling on a pixel
+function calculate_light_intensity(point, light, viewRay, shapes) {
+    rayToLight = {x: light.x - point.x, y: light.y - point.y, z: light.z - point.z};
+    distToLight = ray_magnitude(rayToLight);
+    normalize_ray(rayToLight);
+
+    // TODO: check if ray hits light before doing more calculations
+    normalVec = normal_vector(point.x, point.y, point.z, shapes);
+    let specular = specular_light_intensity(rayToLight, normalVec, viewRay);
+    let diffuse = diffuse_light_intensity(rayToLight, normalVec);
+    let shadow = shadow_light_intensity(rayToLight, distToLight, point, shapes);
+
+    return specular + diffuse + shadow;
+}
+
+
+function specular_light_intensity(rayToLight, normal, viewRay) {
+    let n = 50; // Adjusts radius of highlight
+    let k = 2; // Adjusts brightness of highlight
+
+    // Calculate the reflected ray R = 2(N*L)N - L
+    let scaler = 2 * (rayToLight.x * normal.x + rayToLight.y * normal.y + rayToLight.z * normal.z);
+    let reflected = {
+        x: scaler * normal.x - rayToLight.x,
+        y: scaler * normal.y - rayToLight.y,
+        z: scaler * normal.z - rayToLight.z
+    }
+
+    // Specular highlight is brightest when reflected ray from light
+    // aligns from view ray
+    // Need a negative sign because view ray and reflected rays face opposite directions
+    let specular = -(reflected.x * viewRay.x + reflected.y * viewRay.y + reflected.z * viewRay.z);
+
+    if (specular < 0) {
+        // If the rays face opposite directions then there is no way for light to reach it
+        return 0;
+    }
+
+    return k * Math.pow(specular, n);
+}
+
+
+function diffuse_light_intensity(rayToLight, normal) {
+    let k = 0.3; // Control intensity of diffuse light
+
+    // Diffuse reflection is strongest directly under the light, and tapers off
+    let diffuse = (rayToLight.x * normal.x + rayToLight.y * normal.y + rayToLight.z * normal.z);
+
+    return k * Math.max(0, diffuse);
+}
+
+
+function shadow_light_intensity(rayToLight, distToLight, point, shapes) {
+    // To find if light hits an object, trace from the intersection of the camera ray back towards the light source
+    // If it makes it without hitting anything, light falls on the object
+
+    let distLimit = 0.1;
+    let marchedLength = 1; // Need to start away from surface otherwise it'll think it hit itself
+
+    do {
+        currX = point.x + rayToLight.x * marchedLength;
+        currY = point.y + rayToLight.y * marchedLength;
+        currZ = point.z + rayToLight.z * marchedLength;
+        dist = globalDistanceEstimate(currX, currY, currZ, shapes);
+
+        marchedLength += dist;
+    } while (dist > distLimit && marchedLength < distToLight)
+
+    // The > 3 check ensures it doesn't shadow itself, which looks bad
+    let inShadow = marchedLength < distToLight && marchedLength > 3;
+
+    if (inShadow) {
+        return -1;
+    }
+
+    return 0;
+}
+
 
 function rotate_ray_by_camera_view(ray, pan, tilt) {
     // Rotates a ray from camera to a pixel to its new direction
@@ -221,6 +308,18 @@ function rotate_ray_by_camera_view(ray, pan, tilt) {
     return rot_ray;
 }
 
+// Uses discrete steps to find normal vector
+function normal_vector(x, y, z, shapes) {
+    let eps = 0.2; // Step size
+    let dx = globalDistanceEstimate(x+eps, y, z, shapes) - globalDistanceEstimate(x-eps, y, z, shapes);
+    let dy = globalDistanceEstimate(x, y+eps, z, shapes) - globalDistanceEstimate(x, y-eps, z, shapes);
+    let dz = globalDistanceEstimate(x, y, z+eps, shapes) - globalDistanceEstimate(x, y, z-eps, shapes);
+
+    ray = {x: dx, y: dy, z: dz};
+    normalize_ray(ray);
+    return ray;
+}
+
 // Create an array to store camera rays, instead of calculating every frame
 function create_camera_ray_matrix(rays, z_fov) {
     var rays = [...Array(height)].map(e => Array(width));
@@ -232,8 +331,8 @@ function create_camera_ray_matrix(rays, z_fov) {
             y = (height / 2 - i);
 
             ray = {x: x, y: y, z:z_fov};
-            magnitude = Math.sqrt(ray.x**2 + ray.y**2 + ray.z**2);
-            ray.x /= magnitude; ray.y /= magnitude; ray.z /= magnitude;
+            normalize_ray(ray);
+
             rays[i][j] = ray;
         }
     }
@@ -252,6 +351,17 @@ function create_image_data(width, height) {
     }
 
     return imgData;
+}
+
+// Modifies in place
+function normalize_ray(ray) {
+    let magnitude = ray_magnitude(ray);
+    ray.x /= magnitude; ray.y /= magnitude; ray.z /= magnitude;
+}
+
+// Pythagorean theorem
+function ray_magnitude(ray) {
+    return Math.sqrt(ray.x**2 + ray.y**2 + ray.z**2);
 }
 
 function updateKey(keyCode, value) {
@@ -280,7 +390,7 @@ function updateKey(keyCode, value) {
     }
 }
 
-function getGlobalDistanceEstimate(x, y, z, shapes) {
+function globalDistanceEstimate(x, y, z, shapes) {
     // The distance estimate is the minimum of the distance to all objects on screen
     let dist = 100000;
     for (let i = 0; i < shapes.length; i++) {
@@ -314,7 +424,7 @@ function rectDistanceEstimate(x, y, z, rect) {
 function planeDistanceEstimate(x, y, z, plane) {
     // Distance from point to plane
     // TODO: Need to divide abc part by norm n
-    return (x * plane.a + y * plane.b + z * plane.c) /  + plane.d;
+    return (x * plane.a + y * plane.b + z * plane.c) + plane.d;
 }
 
 function drawRect(x1, y1, x2, y2) {
