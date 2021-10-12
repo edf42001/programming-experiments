@@ -160,13 +160,15 @@ function update() {
         camera.y -= movementAmount;
     }
 
+    // This is the same for all rays, so we only need to calculate it once
+    let startDistEst = globalDistanceEstimate(camera.x, camera.y, camera.z, shapes);
+
     for (var i = 0; i < height; i++) {
         for (var j = 0; j < width; j++)
         {
             // The camera ray is rotated by wherever the camera points
             ray = rotate_ray_by_camera_view(rays[i][j], camera.pan, camera.tilt)
-
-            color = calculate_and_render_pixel(camera, ray, shapes);
+            color = calculate_and_render_pixel(camera, ray, shapes, startDistEst);
 
             index = 4 * (i * width + j);
             imgData.data[index+0] = color[0];
@@ -178,7 +180,7 @@ function update() {
     ctx.putImageData(imgData, 0, 0);
 }
 
-function calculate_and_render_pixel(camera, ray, shapes) {
+function calculate_and_render_pixel(camera, ray, shapes, startDistEst) {
     // Uses raymarching to calculate the color a pixel should be
     // Camera is the camera parameters: position, facing direction vector, fov)
     // Ray is the direction being looked in relative to camera dir
@@ -187,15 +189,13 @@ function calculate_and_render_pixel(camera, ray, shapes) {
     let magnitude = 1000;
     let distLimit = 0.1;
 
-    let marchedLength = 0;
-    let minDist = 1000;
-    let numSteps = 0;
-
     // Do one iteration first with a random dist adjustment so banding
     // of num iterations ambient occlusion disappears
-    let dist = globalDistanceEstimate(camera.x, camera.y, camera.z, shapes);
-    marchedLength = dist * (Math.random() * 0.9 + 0.1);
-    numSteps += 1;
+    let marchedLength = startDistEst * (Math.random() * 0.9 + 0.1);;
+    let minDist = 1000;
+
+    // Starts at one because we start at startDistEst
+    let numSteps = 1;
 
     do {
         currX = camera.x + ray.x * marchedLength;
@@ -226,9 +226,16 @@ function calculate_and_render_pixel(camera, ray, shapes) {
         // TODO: check if ray hits light before doing more calculations
         // TODO: See if this fixes specular issues
         normalVec = normal_vector(point.x, point.y, point.z, shapes);
-        let specular = specular_light_intensity(rayToLight, normalVec, ray);
-        let diffuse = diffuse_light_intensity(rayToLight, normalVec);
+
         let shadow = shadow_light_intensity(rayToLight, distToLight, point, shapes);
+
+        // Only calculate diffuse and specular light if it is not in shadow
+        let specular = 0;
+        let diffuse = 0;
+        if (shadow == 0) {
+            specular = specular_light_intensity(rayToLight, normalVec, ray);
+            diffuse = diffuse_light_intensity(rayToLight, normalVec);
+        }
 
         let intensity = specular + shadow;
 
