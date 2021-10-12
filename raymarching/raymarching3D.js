@@ -28,6 +28,18 @@ shapes.push({
     bob: Math.random() * 6,
 });
 
+// ID 1: Rectangle
+shapes.push({
+    id: 1,
+    x: 300,
+    y: 150,
+    z: 400,
+    rx: 20,
+    ry: 100,
+    rz: 120,
+    bob: Math.random() * 6,
+});
+
 //// ID 2: Plane
 //shapes.push({
 //    id: 2,
@@ -67,7 +79,7 @@ var mouse = {x: 0, y: 0};
 var lastMouse = {x: mouse.x, y: mouse.y}; // Assign by reference is annoying so don't do it
 
 // Loop forever
-var FPS = 15;
+var FPS = 10;
 setInterval(update, 1000 / FPS);
 
 // To keep track of performance
@@ -95,7 +107,6 @@ window.onmousemove = function(event) {
 
 let counter = 0;
 function update() {
-//    let start = (new Date()).getMilliseconds();
     // Keep track of deltaT and fps
     let currTime = new Date();
     // Smooth by adjusting alpha param
@@ -124,21 +135,23 @@ function update() {
     lastMouse.y = mouse.y;
 
     // Move camera in all 3 axes (move along direction we are facing)
-    movementAmount = 15;
+    movementAmount = 20;
+    let dx = movementAmount * Math.cos(camera.pan);
+    let dy = movementAmount * Math.sin(camera.pan);
     if (keys.w) {
-        camera.x += -1 * movementAmount * Math.sin(camera.pan)
-        camera.z += movementAmount * Math.cos(camera.pan);
+        camera.x += -dy;
+        camera.z += dx;
     } else if (keys.s) {
-        camera.x -= -1 * movementAmount * Math.sin(camera.pan)
-        camera.z -= movementAmount * Math.cos(camera.pan);
+        camera.x += dy;
+        camera.z += -dx;
     }
 
     if (keys.a) {
-        camera.x += -1 * movementAmount * Math.cos(camera.pan)
-        camera.z += -1 * movementAmount * Math.sin(camera.pan);
+        camera.x += -dx;
+        camera.z += -dy;
     } else if (keys.d) {
-        camera.x -= -1 * movementAmount * Math.cos(camera.pan)
-        camera.z -= -1 * movementAmount * Math.sin(camera.pan);
+        camera.x += dx;
+        camera.z += dy;
     }
 
     if (keys.up) {
@@ -162,8 +175,6 @@ function update() {
         }
     }
 
-//    let end = (new Date()).getMilliseconds();
-//    console.log("dt: " + (end - start));
     ctx.putImageData(imgData, 0, 0);
 }
 
@@ -213,6 +224,7 @@ function calculate_and_render_pixel(camera, ray, shapes) {
         normalize_ray(rayToLight);
 
         // TODO: check if ray hits light before doing more calculations
+        // TODO: See if this fixes specular issues
         normalVec = normal_vector(point.x, point.y, point.z, shapes);
         let specular = specular_light_intensity(rayToLight, normalVec, ray);
         let diffuse = diffuse_light_intensity(rayToLight, normalVec);
