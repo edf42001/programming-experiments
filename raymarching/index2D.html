@@ -14,19 +14,14 @@
     </style>
 </head>
 <body>
-
     <div class="flex">
-        <h2>Welcome to my 3D RayMarching Experiment</h2>
-
-        <!-- The canvas is small so it renders fast, make it bigger with CSS so it is easier to see -->
-        <canvas id="mainCanvas" width="320" height="180" style="border:1px solid;width:500px">
+        <h2>Welcome to my 2D RayMarching Experiment</h2>
+        <canvas onmousemove="storeMousePos(event)" id="mainCanvas" width="400" height="400">
             Canvas not supported: please update your browser.
         </canvas>
-        <p id="fpsDisplay">FPS: 10</p>
     </div>
 
-
     <!-- JavaScript (my code, jquery)-->
-    <script src="raymarching3D.js"></script>
+    <script src="raymarching2D.js"></script>
 </body>
 </html>

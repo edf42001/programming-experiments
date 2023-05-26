@@ -2,10 +2,10 @@
 
 Raymarching is a rendering method in which rays are "marched" from light sources until they hit something.
 The path the light ray travels and what it hits affect how the pixel is rendered.
-To run the examples, open `index.html` or `index3D.html` in your browser.
+To run the examples, open `index2D.html` or `index3D.html` in your browser.
 
 ## 2D Raymarching
-`index.html` runs an interactive 2D raymarching world, where the algorithm is used to determine when a ray hits a shape. 
+`index2D.html` runs an interactive 2D raymarching world, where the algorithm is used to determine when a ray hits a shape.
 ![2D raymarching](media/raymarching_2d.png)
 
 ## 3D Raymarching
