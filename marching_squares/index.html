@@ -4,18 +4,25 @@
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <title>Marching Squares Experiments</title>
-    <!-- <link rel="icon" href="favicon-32x32.png" type="image/x-icon"> -->
+
+    <style>
+        .flex {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+    </style>
+
 </head>
 <body>
-    <p>Welcome to my Marching Squares Experiments</p>
+    <div class="flex">
+        <h2>Welcome to my Marching Squares Experiment</h2>
+        <canvas id="mainCanvas" width="400" height="400" style="border:1px solid;">
+            Canvas not supported: please update your browser.
+        </canvas>
+    </div>
 
-
-    <!-- onmousemove="storeMousePos(event)" -->
-    <canvas id="mainCanvas" width="400" height="400">
-        Canvas not supported: please update your browser.
-    </canvas>
-
-    <!-- JavaScript (my code, jquery)-->
+    <!--Import my custom JavaScript-->
     <script src="ball.js"></script>
     <script src="vector2D.js"></script>
     <script src="marchingsquares.js"></script>
