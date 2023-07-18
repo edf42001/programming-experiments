@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<head>
+  <title>ChatGPT SVG DrawBot</title>
+  <link
+    rel="shortcut icon"
+    href="{{ url_for('static', filename='dog.svg') }}"
+  />
+  <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}" />
+</head>
+
+<body>
+  <img src="{{ url_for('static', filename='dog.svg') }}" class="icon" />
+  <h3>Welcome to DrawBot</h3>
+  <form action="/" method="post">
+    <input type="text" name="prompt" placeholder="What to draw?" autocomplete="off" required />
+    <input type="submit" value="Go!" />
+  </form>
+  {% if result %}
+  <div class="result">{{ result | safe }}</div>
+  {% endif %}
+</body>
