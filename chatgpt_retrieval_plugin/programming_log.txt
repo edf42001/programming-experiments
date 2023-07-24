@@ -1,0 +1,39 @@
+7/23/23
+Wrote code to split a document into sentences and upload those separatley, to allow for more fine grained searches.
+I had to use the json arg of requests.post, not data, fo rthe /upsert endpoint because that is the type it expects.
+
+7/18/23
+I had trouble with the server sometimes freezing. Oddly, it doesn't happen when I run the command and upload many documents
+in a row. So maybe it is because I keep disconecting and reconnecting by relaunching the process.
+
+The metadata field needs to be converted to a string, not passed in as a dictionary. Maybe that's just how
+it is with multipart form data.
+
+7/10/23
+I had trouble setting up my postgres docker container. This is because although the tutorials don't mention it,
+you need to set -p 5432:5432 when making the container so the port is exposed, then include -h localhost in your
+psql command, otherwise it defaults to connecting via a socket.
+
+I created a test document about my cat's name, and used the debug browser window of FastAPI to
+embed the document, then query the document with a question about cat's names. It looks like the bearing
+token can be any random string of text, and is used to authenticate requests to the API.
+
+I don't know if chatGPT can embed documents for me, so I may have to create a little application to
+automatically embed them with proper metadata (author, date). Luckily, FastAPI shows the curl command
+used so I can mimic that.
+
+In order to use my own plugin, I have to register on the waiting list.
+
+7/9/23
+I verified access to ChatGPT developer APIs, which will be necessary for using this plugin, by creating
+a simple Flask app that uses the Chat Completions endpoint to draw SVG images.
+
+I decided on Postgres with the pgvector extension, as I have heard of it before, which means it
+should have a large userbase and tutorials available. In addition, you can access it through a simple
+Docker container.
+
+To automatically set up the database, I use a management tool called psql and a setup file the gpt retrival plugin github
+provides. See https://github.com/openai/chatgpt-retrieval-plugin/blob/main/docs/providers/postgres/setup.md for details.
+
+Used poetry to set up a python environment. Poetry isn't on my path so I have to use the full path to it.
+This is a problem with how I install python packages.
